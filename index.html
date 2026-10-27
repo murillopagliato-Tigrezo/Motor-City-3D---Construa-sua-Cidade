@@ -1,0 +1,1406 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metro City 3D — Relevo e Biomas</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<style>
+*{box-sizing:border-box}
+:root{--green:#62e6a2;--panel:#172a3df5;--line:#40586e}
+body{margin:0;overflow:hidden;background:#9fc9dd;color:#fff;font-family:Arial,sans-serif}
+canvas{display:block}
+button,select{font:inherit;cursor:pointer}
+button{font-weight:bold}
+#top{position:fixed;z-index:4;top:0;left:0;right:0;min-height:67px;background:#142638f5;border-bottom:2px solid var(--green);display:flex;align-items:center;gap:15px;padding:9px 14px;flex-wrap:wrap}
+.logo{font-weight:900;font-size:17px;margin-right:auto}
+.logo span{color:var(--green)}
+.stat{font-size:10px;color:#cbd9e5;min-width:70px}
+.stat strong{display:block;color:var(--green);font-size:14px;margin-top:5px}
+#menu{position:fixed;z-index:4;top:77px;bottom:38px;left:8px;width:235px;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:10px}
+h3{font-size:11px;color:var(--green);margin:14px 0 7px}
+.build,.action{display:block;width:100%;margin:4px 0;padding:9px 7px;background:#263c50;color:white;border:1px solid #41576b;border-radius:5px;text-align:left;font-size:11px}
+.build span{float:right;color:#9cf0bd;font-size:10px}
+.build:hover,.action:hover,.build.active{background:#24674b;border-color:#62e6a2}
+.action{text-align:center;background:#344b61}
+#info{font-size:11px;line-height:1.5;color:#c7d7e4;margin:10px 0}
+#stats p{display:flex;justify-content:space-between;font-size:11px;color:#d1dce7}
+#stats strong{color:var(--green)}
+hr{border-color:#405267}
+#help{position:fixed;z-index:4;bottom:5px;left:50%;transform:translateX(-50%);padding:9px 13px;background:#142638ed;border-radius:6px;font-size:10px;text-align:center;max-width:95%;pointer-events:none}
+#message{position:fixed;z-index:25;top:82px;left:50%;transform:translateX(-50%);background:#164e37;padding:12px 16px;border-radius:7px;opacity:0;pointer-events:none;max-width:90%;text-align:center;transition:opacity .2s;font-size:13px}
+#message.show{opacity:1}
+#intro{position:fixed;inset:0;z-index:20;background:linear-gradient(130deg,#0b1728f5,#172f43f2);display:grid;place-items:center;padding:16px;overflow-y:auto}
+#intro.hidden{display:none}
+.setup{width:min(790px,100%);max-height:96vh;overflow-y:auto;background:#1a3045;border:1px solid #47647c;border-radius:15px;padding:25px;box-shadow:0 20px 80px #0007}
+.hero{text-align:center;margin-bottom:20px}
+.hero h1{font-size:clamp(25px,5vw,42px);margin:8px 0;color:var(--green)}
+.hero p{color:#c8d8e5;font-size:13px;line-height:1.6;margin:8px auto;max-width:560px}
+.eyebrow{color:#8ce7b4;font-size:10px;letter-spacing:3px;font-weight:bold}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field label{display:block;font-size:12px;font-weight:bold;margin:0 0 7px;color:#d7e5ef}
+.field select{width:100%;padding:12px;background:#0f2234;color:#fff;border:1px solid #47647c;border-radius:7px}
+.difficulty{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:10px 0 14px}
+.diff{padding:11px 4px;border:1px solid #40586e;border-radius:7px;background:#102438;color:#d8e5ef;font-size:11px}
+.diff small{display:block;font-size:9px;margin-top:5px;color:#9db3c5}
+.diff.active{border-color:var(--green);background:#20533f;color:white}
+#difficultyDesc{background:#102438;border-radius:7px;padding:12px;color:#c6d9e7;font-size:12px;line-height:1.6;min-height:55px}
+#start{width:100%;padding:15px;margin-top:17px;border:0;border-radius:8px;background:var(--green);color:#10291c;font-size:14px}
+#start:hover{background:#8af4b9}
+#mapPreview{height:110px;border-radius:8px;margin:14px 0;background:#426e4a;overflow:hidden;position:relative;border:1px solid #54715f}
+#mapPreview canvas{width:100%;height:100%}
+#mapLabel{position:absolute;bottom:7px;left:9px;background:#122739d9;padding:5px 8px;border-radius:4px;font-size:10px}
+#pausePanel{display:none;position:fixed;z-index:18;inset:0;background:#091624d9;place-items:center;padding:20px}
+#pausePanel.show{display:grid}
+.pausebox{background:#1a3045;padding:25px;border-radius:12px;width:min(350px,100%);text-align:center}
+.pausebox button{width:100%;padding:12px;margin-top:8px;border:0;border-radius:6px;background:#29465d;color:white}
+.pausebox button:first-of-type{background:var(--green);color:#10291c}
+@media(max-width:650px){
+ #top{gap:7px;padding:7px}.logo{width:100%;font-size:14px}
+ .stat{min-width:62px}.stat strong{font-size:12px}
+ #menu{top:111px;width:185px;left:4px;bottom:35px}
+ .build,.action{font-size:10px;padding:8px 4px}
+ .formgrid{grid-template-columns:1fr}
+ .difficulty{grid-template-columns:repeat(3,1fr)}
+ .setup{padding:17px}
+ #help{font-size:9px}
+}
+</style>
+</head>
+<body>
+
+<header id="top">
+ <div class="logo">🏙️ METRO <span>CITY 3D</span></div>
+ <div class="stat">💰 ORÇAMENTO<strong id="money">R$ 0</strong></div>
+ <div class="stat">👥 POPULAÇÃO<strong id="population">0</strong></div>
+ <div class="stat">🏢 EDIFÍCIOS<strong id="count">0</strong></div>
+ <div class="stat">😊 FELICIDADE<strong id="happiness">70%</strong></div>
+ <div class="stat">📅 DIA<strong id="day">1</strong></div>
+ <button class="action" id="pauseBtn" style="width:auto;margin:0;padding:9px 12px">Ⅱ Menu</button>
+</header>
+
+<aside id="menu">
+ <h3>🏘️ RESIDÊNCIAS</h3>
+ <button class="build" data-type="house">🏠 Casa <span>R$ 2.000</span></button>
+ <button class="build" data-type="apartment">🏢 Prédio <span>R$ 8.000</span></button>
+ <button class="build" data-type="suburb">🏡 Subúrbio <span>R$ 3.500</span></button>
+
+ <h3>🛍️ COMÉRCIO</h3>
+ <button class="build" data-type="shop">🏪 Loja <span>R$ 4.000</span></button>
+ <button class="build" data-type="market">🛒 Mercado <span>R$ 8.000</span></button>
+ <button class="build" data-type="mall">🏬 Shopping <span>R$ 25.000</span></button>
+
+ <h3>🏥 SERVIÇOS</h3>
+ <button class="build" data-type="hospital">🏥 Hospital <span>R$ 10.000</span></button>
+ <button class="build" data-type="school">🏫 Escola <span>R$ 7.000</span></button>
+ <button class="build" data-type="fire">🚒 Bombeiros <span>R$ 8.000</span></button>
+ <button class="build" data-type="power">⚡ Usina <span>R$ 12.000</span></button>
+ <button class="build" data-type="water">💧 Estação de água <span>R$ 6.000</span></button>
+
+ <h3>🌾 AGRICULTURA</h3>
+ <button class="build" data-type="farm">🚜 Fazenda <span>R$ 12.000</span></button>
+ <button class="build" data-type="field">🌾 Plantação <span>R$ 3.000</span></button>
+
+ <h3>🛣️ INFRAESTRUTURA</h3>
+ <button class="build" data-type="road">🛣️ Rua <span>R$ 500</span></button>
+ <button class="build" data-type="park">🌳 Parque <span>R$ 1.000</span></button>
+ <button class="build" data-type="tree">🌲 Árvore <span>R$ 200</span></button>
+ <button class="build" data-type="bridge">🌉 Ponte <span>R$ 4.000</span></button>
+
+ <h3>🌊 ÁGUA E PAISAGISMO</h3>
+ <button class="build" data-type="stream">〰️ Riacho <span>R$ 1.500</span></button>
+ <button class="build" data-type="river">🌊 Rio <span>R$ 3.000</span></button>
+ <button class="build" data-type="lake">🏞️ Lago <span>R$ 5.000</span></button>
+ <button class="build" data-type="dam">🧱 Represa <span>R$ 18.000</span></button>
+
+ <div id="info">Escolha uma construção e clique no terreno.</div>
+ <hr>
+ <h3>📊 CIDADE</h3>
+ <div id="stats">
+  <p>⚡ Energia <strong id="energy">0%</strong></p>
+  <p>💧 Água <strong id="water">0%</strong></p>
+  <p>💼 Empregos <strong id="jobs">0</strong></p>
+  <p>🌾 Produção <strong id="food">0</strong></p>
+  <p>💵 Renda/ciclo <strong id="income">R$ 0</strong></p>
+ </div>
+ <hr>
+ <h3>🧰 FERRAMENTAS</h3>
+ <button class="action" id="rotate">↻ Girar construção (R)</button>
+ <button class="action" id="remove">✖ Remover construção (X)</button>
+ <button class="action" id="cancel">Cancelar seleção (Esc)</button>
+ <button class="action" id="sell">🌾 Vender produção rural</button>
+ <button class="action" id="daynight">🌙 Dia / Noite</button>
+ <button class="action" id="disaster">🌪️ Desastre natural</button>
+ <button class="action" id="save">💾 Salvar cidade</button>
+ <button class="action" id="load">📂 Carregar cidade</button>
+ <button class="action" id="newGame">🗺️ Novo mapa / partida</button>
+</aside>
+
+<div id="help">Clique para construir · WASD: mover · Arraste: girar câmera · Scroll: zoom · R: girar · X: remover · ESC: cancelar</div>
+<div id="message"></div>
+
+<div id="intro">
+ <section class="setup">
+  <div class="hero">
+   <div class="eyebrow">SIMULADOR DE CIDADES 3D</div>
+   <h1>🏙️ METRO CITY</h1>
+   <p>Construa sua cidade em um mapa 3D com colinas, montanhas, vales, rios, florestas e diferentes biomas.</p>
+  </div>
+  <div class="formgrid">
+   <div class="field">
+    <label for="mapType">🗺️ Tipo de mapa / bioma</label>
+    <select id="mapType">
+     <option value="plains">🌿 Planície com colinas</option>
+     <option value="forest">🌲 Floresta</option>
+     <option value="desert">🏜️ Deserto</option>
+     <option value="island">🏝️ Ilha tropical</option>
+     <option value="mountains">⛰️ Montanhas</option>
+     <option value="jungle">🌴 Selva tropical</option>
+     <option value="tundra">❄️ Tundra gelada</option>
+     <option value="autumn">🍂 Floresta de outono</option>
+     <option value="volcanic">🌋 Terreno vulcânico</option>
+     <option value="savanna">🦒 Savana</option>
+     <option value="alpine">🏔️ Região alpina</option>
+     <option value="swamp">🐊 Pântano</option>
+     <option value="cherry">🌸 Cerejeiras</option>
+    </select>
+   </div>
+   <div class="field">
+    <label for="mapSize">📐 Dimensões do mapa</label>
+    <select id="mapSize">
+     <option value="200">Pequeno — 200 × 200</option>
+     <option value="400">Médio — 400 × 400</option>
+     <option value="600" selected>Grande — 600 × 600</option>
+     <option value="1000">Gigante — 1.000 × 1.000</option>
+    </select>
+   </div>
+  </div>
+  <div class="field" style="margin-top:18px">
+   <label>🎮 Escolha a dificuldade</label>
+   <div class="difficulty" id="difficultyButtons">
+    <button class="diff" data-difficulty="easy">Fácil<small>Relaxado</small></button>
+    <button class="diff active" data-difficulty="normal">Normal<small>Equilibrado</small></button>
+    <button class="diff" data-difficulty="hard">Difícil<small>Desafio</small></button>
+    <button class="diff" data-difficulty="punitive">Punitivo<small>Implacável</small></button>
+    <button class="diff" data-difficulty="sandbox">Caixa de areia<small>Sem custos</small></button>
+   </div>
+   <div id="difficultyDesc">Economia equilibrada, orçamento inicial padrão e desafios moderados.</div>
+  </div>
+  <div id="mapPreview"><div id="mapLabel">Prévia do terreno</div></div>
+  <button id="start">▶ CRIAR CIDADE E COMEÇAR</button>
+  <p style="text-align:center;color:#9bb2c4;font-size:10px;margin-bottom:0">Dica: construa residências, ruas, serviços públicos e fontes de renda.</p>
+ </section>
+</div>
+
+<div id="pausePanel">
+ <div class="pausebox">
+  <h2>🏙️ Cidade pausada</h2>
+  <p id="pauseDescription" style="color:#b9cad8;font-size:12px"></p>
+  <button id="resume">▶ Continuar cidade</button>
+  <button id="savePause">💾 Salvar cidade</button>
+  <button id="changeMap">🗺️ Configurar outra cidade</button>
+ </div>
+</div>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+const $=id=>document.getElementById(id);
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0xa7c9dc);
+scene.fog=new THREE.Fog(0xa7c9dc,350,1100);
+
+const camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,.1,5000);
+camera.position.set(65,75,85);
+
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.1;
+document.body.prepend(renderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.target.set(0,0,0);
+controls.enableDamping=true;
+controls.maxPolarAngle=Math.PI/2.03;
+controls.minDistance=12;
+controls.maxDistance=850;
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x657553,2));
+
+const sun=new THREE.DirectionalLight(0xffffff,3);
+sun.position.set(-100,200,80);
+sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left=-600;
+sun.shadow.camera.right=600;
+sun.shadow.camera.top=600;
+sun.shadow.camera.bottom=-600;
+scene.add(sun);
+
+let MAP_SIZE=600,LIMIT=288,GRID=4;
+let mapType="plains",difficulty="normal";
+let money=1000000,population=0,happiness=70,rotation=0;
+let selectedType=null,deleteMode=false,gameStarted=false,paused=false,isNight=false;
+let foodProduction=0,totalIncome=0,buildings=[],day=1,cycleClock=0;
+let disasterObjects=[],disasterActive=false,disasterTimer=0,disasterElapsed=0;
+let activeDisasterType="",disasterTarget=null;
+let disasterCenter=new THREE.Vector3(),damageApplied=false;
+let lastShake=new THREE.Vector3();
+
+const terrainGroup=new THREE.Group();
+const city=new THREE.Group();
+const waterGroup=new THREE.Group();
+scene.add(terrainGroup,city,waterGroup);
+
+const prices={
+ house:2000,apartment:8000,suburb:3500,
+ shop:4000,market:8000,mall:25000,
+ hospital:10000,school:7000,fire:8000,
+ power:12000,water:6000,farm:12000,field:3000,
+ road:500,park:1000,tree:200,bridge:4000,
+ stream:1500,river:3000,lake:5000,dam:18000
+};
+
+const names={
+ house:"Casa",apartment:"Prédio",suburb:"Casa de subúrbio",
+ shop:"Loja",market:"Mercado",mall:"Shopping",
+ hospital:"Hospital",school:"Escola",fire:"Bombeiros",
+ power:"Usina elétrica",water:"Estação de água",
+ farm:"Fazenda",field:"Plantação",road:"Rua",
+ park:"Parque",tree:"Árvore",bridge:"Ponte",
+ stream:"Riacho",river:"Rio",lake:"Lago",dam:"Represa"
+};
+
+const residents={house:4,apartment:20,suburb:6};
+const jobsByType={
+ shop:5,market:12,mall:40,hospital:25,school:15,
+ fire:10,power:8,water:6,farm:8,field:3
+};
+
+const radii={
+ house:4,apartment:5,suburb:5,shop:4,market:6,mall:9,
+ hospital:7,school:6,fire:5,power:7,water:6,farm:8,
+ field:6,road:5,park:6,tree:2,bridge:6,
+ stream:5,river:7,lake:10,dam:10
+};
+
+const rules={
+ easy:{start:1500000,cost:.8,income:1.35,disaster:.65,happy:80},
+ normal:{start:1000000,cost:1,income:1,disaster:1,happy:70},
+ hard:{start:650000,cost:1.25,income:.78,disaster:1.4,happy:60},
+ punitive:{start:350000,cost:1.65,income:.55,disaster:1.8,happy:50},
+ sandbox:{start:999999999,cost:0,income:0,disaster:0,happy:100}
+};
+
+const difficultyInfo={
+ easy:"Orçamento generoso, construções baratas, renda maior e desastres menos severos.",
+ normal:"Economia equilibrada, orçamento inicial padrão e desafios moderados.",
+ hard:"Construções caras, renda reduzida e desastres mais prejudiciais.",
+ punitive:"Pouco dinheiro, custos elevados e penalidades severas.",
+ sandbox:"Construções gratuitas e dinheiro ilimitado para experimentar."
+};
+
+const biomeSettings={
+ plains:{ground:0x779b5e,background:0xa7c9dc,fog:0xa7c9dc,relief:9,trees:35,rocks:12},
+ forest:{ground:0x527f49,background:0xb0c8b2,fog:0xb0c8b2,relief:13,trees:350,rocks:20},
+ desert:{ground:0xc9b477,background:0xe4cda1,fog:0xe4cda1,relief:8,trees:18,rocks:70},
+ island:{ground:0x679957,background:0x248ec0,fog:0x248ec0,relief:0,trees:30,rocks:48},
+ mountains:{ground:0x718b64,background:0xa7c9dc,fog:0xa7c9dc,relief:32,trees:65,rocks:110},
+ jungle:{ground:0x286b3c,background:0x91bca0,fog:0x91bca0,relief:15,trees:420,rocks:35},
+ tundra:{ground:0xd7e2e5,background:0xbacbd7,fog:0xbacbd7,relief:16,trees:70,rocks:60},
+ autumn:{ground:0x8b8050,background:0xd8b9a0,fog:0xd8b9a0,relief:12,trees:280,rocks:25},
+ volcanic:{ground:0x403c3b,background:0x9a7771,fog:0x9a7771,relief:26,trees:8,rocks:110},
+ savanna:{ground:0xb6a45c,background:0xe0cb94,fog:0xe0cb94,relief:10,trees:45,rocks:20},
+ alpine:{ground:0x879c8e,background:0xc2d7e8,fog:0xc2d7e8,relief:36,trees:90,rocks:100},
+ swamp:{ground:0x52684a,background:0x9db6a2,fog:0x9db6a2,relief:5,trees:100,rocks:25},
+ cherry:{ground:0x71965b,background:0xc5d9ed,fog:0xc5d9ed,relief:8,trees:220,rocks:12}
+};
+
+function notify(text){
+ const el=$("message");
+ el.textContent=text;
+ el.classList.add("show");
+ clearTimeout(notify.timer);
+ notify.timer=setTimeout(()=>el.classList.remove("show"),2800);
+}
+
+function actualPrice(type){
+ return difficulty==="sandbox"?0:Math.ceil(prices[type]*rules[difficulty].cost);
+}
+function fmt(n){return "R$ "+Math.floor(n).toLocaleString("pt-BR")}
+
+function updateUI(){
+ $("money").textContent=difficulty==="sandbox"?"∞":fmt(money);
+ $("population").textContent=population.toLocaleString("pt-BR");
+ $("count").textContent=buildings.length;
+ $("happiness").textContent=Math.round(happiness)+"%";
+ $("day").textContent=day;
+}
+
+function updateStats(){
+ let jobs=0,food=0,energy=0,water=0;
+ for(const b of buildings){
+  const t=b.userData.type;
+  jobs+=jobsByType[t]||0;
+  if(t==="farm")food+=30;
+  if(t==="field")food+=10;
+  if(t==="power")energy+=35;
+  if(t==="water")water+=35;
+  if(t==="dam")water+=20;
+ }
+ foodProduction=food;
+ const penalty=(population>0&&energy===0?population*.7:0)
+ +(population>0&&water===0?population*.7:0);
+ totalIncome=Math.floor(Math.max(0,population*2+jobs*8-penalty)*rules[difficulty].income);
+ if(difficulty==="sandbox")totalIncome=0;
+ $("jobs").textContent=jobs;
+ $("food").textContent=food;
+ $("energy").textContent=Math.min(100,energy)+"%";
+ $("water").textContent=Math.min(100,water)+"%";
+ $("income").textContent=difficulty==="sandbox"?"∞":fmt(totalIncome);
+ updateUI();
+}
+
+function mat(color,roughness=.85){
+ return new THREE.MeshStandardMaterial({color,roughness});
+}
+
+function box(parent,w,h,d,color,x,y,z){
+ const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color));
+ mesh.position.set(x,y+h/2,z);
+ mesh.castShadow=true;
+ mesh.receiveShadow=true;
+ parent.add(mesh);
+ return mesh;
+}
+
+/*
+ * RELEVO PROCEDURAL:
+ * O terreno usa a mesma função para gerar a malha e posicionar
+ * construções, árvores e elementos decorativos.
+ */
+function getTerrainHeight(x,z){
+ if(mapType==="island")return 0;
+
+ const cfg=biomeSettings[mapType]||biomeSettings.plains;
+ const r=cfg.relief;
+ const nx=x/MAP_SIZE,nz=z/MAP_SIZE;
+
+ // Ondulações de baixa frequência que formam vales e colinas.
+ let h=(
+  Math.sin(x*.012+z*.004)*Math.cos(z*.014-x*.003)*.34+
+  Math.sin(x*.023-z*.017)*.17+
+  Math.cos(z*.031+x*.014)*.09
+ )*r;
+
+ // Colinas largas, distribuídas pelo mapa.
+ const hills=[
+  [-.28,-.22,.19,1.0],
+  [.27,-.31,.23,.82],
+  [.32,.24,.20,1.05],
+  [-.29,.29,.23,.9],
+  [.02,.38,.16,.62],
+  [-.03,-.04,.17,.52]
+ ];
+ for(const [hx,hz,spread,strength] of hills){
+  const dx=nx-hx,dz=nz-hz;
+  const distance=dx*dx+dz*dz;
+  h+=r*strength*Math.exp(-distance/(spread*spread*.52));
+ }
+
+ // Montanhas com picos mais acentuados.
+ if(mapType==="mountains"||mapType==="alpine"){
+  const peaks=[
+   [-.24,-.18,1.0],[.18,-.25,.82],[.28,.20,1.08],
+   [-.31,.28,.92],[.03,.10,.72]
+  ];
+  for(const [px,pz,strength] of peaks){
+   const d=Math.hypot(nx-px,nz-pz);
+   h+=r*.95*strength*Math.exp(-(d*d)/.018);
+  }
+ }
+ if(mapType==="volcanic"){
+  const d=Math.hypot(nx+.12,nz-.08);
+  h+=r*1.6*Math.max(0,1-d/.30);
+  h+=Math.sin(d*65)*r*.025;
+ }
+ if(mapType==="swamp")h*=.4;
+ if(mapType==="desert")h+=Math.sin(x*.007)*2+Math.cos(z*.009)*2;
+
+ return Math.max(0,h);
+}
+
+function makeTree(parent,x,z,s=1){
+ const group=new THREE.Group();
+ const trunkColor=mapType==="jungle"?0x60452d:0x705036;
+ const leafColor={
+  desert:0x8e9a4a,jungle:0x14552c,forest:0x285c35,
+  autumn:0xc45d26,cherry:0xe9a8ca,tundra:0x466a58,
+  savanna:0x627a36,swamp:0x405b37,volcanic:0x39472e
+ }[mapType]||0x347445;
+
+ box(group,.45*s,2*s,.45*s,trunkColor,0,0,0);
+
+ if(mapType==="cherry"){
+  const crown=new THREE.Mesh(new THREE.SphereGeometry(1.55*s,10,8),mat(0xeaa5c8));
+  crown.position.y=3*s;crown.scale.set(1.15,.75,1.05);crown.castShadow=true;group.add(crown);
+ }else if(mapType==="savanna"){
+  const crown=new THREE.Mesh(new THREE.SphereGeometry(1.5*s,8,6),mat(0x63783c));
+  crown.position.y=3.9*s;crown.scale.set(1.5,.38,1.1);crown.castShadow=true;group.add(crown);
+ }else if(mapType==="tundra"||mapType==="alpine"){
+  for(let i=0;i<3;i++){
+   const cone=new THREE.Mesh(new THREE.ConeGeometry((1.35-i*.25)*s,2.5*s,7),mat(i===2?0xc8d7db:leafColor));
+   cone.position.y=(2+i*1.05)*s;cone.castShadow=true;group.add(cone);
+  }
+ }else{
+  const cone=new THREE.Mesh(new THREE.ConeGeometry(1.35*s,3.3*s,7),mat(leafColor));
+  cone.position.y=2.8*s;cone.castShadow=true;group.add(cone);
+  if(mapType==="jungle"){
+   for(let i=0;i<5;i++){
+    const leaf=new THREE.Mesh(new THREE.ConeGeometry(.5*s,2.2*s,5),mat(0x398447));
+    leaf.position.set(Math.sin(i*1.25)*1.05*s,2.2*s,Math.cos(i*1.25)*1.05*s);
+    leaf.rotation.z=(Math.random()-.5)*.6;group.add(leaf);
+   }
+  }
+ }
+ // Elementos dentro de edifícios usam coordenadas locais.
+ const local=parent!==terrainGroup;
+ group.position.set(x,local?0:getTerrainHeight(x,z),z);
+ parent.add(group);
+ return group;
+}
+
+function waterSurface(parent,w,d,color,y=.2){
+ const mesh=new THREE.Mesh(
+  new THREE.PlaneGeometry(w,d),
+  new THREE.MeshStandardMaterial({color,roughness:.22,metalness:.06,transparent:true,opacity:.92,side:THREE.DoubleSide})
+ );
+ mesh.rotation.x=-Math.PI/2;
+ mesh.position.y=y;
+ mesh.userData.waterSurface=true;
+ mesh.userData.baseY=y;
+ parent.add(mesh);
+ return mesh;
+}
+
+function disposeObject(obj){
+ obj.traverse(o=>{
+  if(o.geometry)o.geometry.dispose();
+  if(o.material){
+   const materials=Array.isArray(o.material)?o.material:[o.material];
+   materials.forEach(m=>m.dispose());
+  }
+ });
+}
+
+function removeGroupContents(group){
+ while(group.children.length){
+  const obj=group.children[0];
+  group.remove(obj);
+  disposeObject(obj);
+ }
+}
+
+function makeIslandShape(radius,phase=0,segments=112){
+ const shape=new THREE.Shape();
+ for(let i=0;i<=segments;i++){
+  const a=i/segments*Math.PI*2;
+  const irregular=1+.055*Math.sin(a*3+phase)+.035*Math.sin(a*5+phase*1.7)+.018*Math.cos(a*9-phase);
+  const x=Math.cos(a)*radius*irregular;
+  const z=Math.sin(a)*radius*irregular*.82;
+  if(i===0)shape.moveTo(x,z);else shape.lineTo(x,z);
+ }
+ shape.closePath();
+ return shape;
+}
+
+function makeIslandSurface(radius,color,y,phase=0){
+ const geometry=new THREE.ShapeGeometry(makeIslandShape(radius,phase));
+ const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color,roughness:1,side:THREE.DoubleSide}));
+ mesh.rotation.x=-Math.PI/2;
+ mesh.position.y=y;
+ mesh.receiveShadow=true;
+ return mesh;
+}
+
+function addIsland(){
+ const sea=new THREE.Mesh(
+  new THREE.PlaneGeometry(MAP_SIZE*2.5,MAP_SIZE*2.5),
+  new THREE.MeshStandardMaterial({color:0x197fa8,roughness:.32})
+ );
+ sea.rotation.x=-Math.PI/2;sea.position.y=-.7;waterGroup.add(sea);
+
+ waterGroup.add(makeIslandSurface(MAP_SIZE*.405,0xe7ce91,-.10,.4));
+ const grass=makeIslandSurface(MAP_SIZE*.355,0x679957,-.025,0);
+ grass.userData.ground=true;
+ terrainGroup.add(grass);
+ LIMIT=MAP_SIZE*.335;
+
+ for(let i=0;i<48;i++){
+  const a=Math.random()*Math.PI*2;
+  const r=MAP_SIZE*(.365+Math.random()*.04);
+  const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(1+Math.random()*1.7,0),mat(0x9b9b8b));
+  rock.position.set(Math.cos(a)*r,.1,Math.sin(a)*r*.82);
+  rock.scale.y=.45+Math.random()*.5;rock.castShadow=true;waterGroup.add(rock);
+ }
+ for(let i=0;i<30;i++){
+  const a=Math.random()*Math.PI*2,r=MAP_SIZE*(.29+Math.random()*.045);
+  makeTree(terrainGroup,Math.cos(a)*r,Math.sin(a)*r*.82,.7+Math.random()*.3);
+ }
+}
+
+/* Grade de linhas que acompanha a altura real do terreno. */
+function addConformingGrid(){
+ const vertices=[];
+ const step=GRID;
+ const half=MAP_SIZE/2;
+ for(let x=-half;x<=half;x+=step){
+  for(let z=-half;z<half;z+=step){
+   vertices.push(x,getTerrainHeight(x,z)+.09,z);
+   vertices.push(x,getTerrainHeight(x,z+step)+.09,z+step);
+  }
+ }
+ for(let z=-half;z<=half;z+=step){
+  for(let x=-half;x<half;x+=step){
+   vertices.push(x,getTerrainHeight(x,z)+.09,z);
+   vertices.push(x+step,getTerrainHeight(x+step,z)+.09,z);
+  }
+ }
+ const geo=new THREE.BufferGeometry();
+ geo.setAttribute("position",new THREE.Float32BufferAttribute(vertices,3));
+ const lines=new THREE.LineSegments(geo,new THREE.LineBasicMaterial({
+  color:0x263c28,transparent:true,opacity:.13
+ }));
+ lines.userData.terrainGrid=true;
+ terrainGroup.add(lines);
+}
+
+function addTerrain(){
+ removeGroupContents(terrainGroup);
+ removeGroupContents(waterGroup);
+ const cfg=biomeSettings[mapType]||biomeSettings.plains;
+
+ if(mapType==="island"){
+  addIsland();
+  scene.background.set(isNight?0x101b32:cfg.background);
+  scene.fog.color.set(isNight?0x101b32:cfg.fog);
+  return;
+ }
+
+ LIMIT=MAP_SIZE/2-12;
+
+ // Mais segmentos produzem um relevo suave, inclusive em mapas grandes.
+ const segments=Math.min(220,Math.max(100,Math.round(MAP_SIZE/3)));
+ const geometry=new THREE.PlaneGeometry(MAP_SIZE,MAP_SIZE,segments,segments);
+ geometry.rotateX(-Math.PI/2);
+ const pos=geometry.attributes.position;
+ for(let i=0;i<pos.count;i++){
+  const x=pos.getX(i),z=pos.getZ(i);
+  pos.setY(i,getTerrainHeight(x,z)-.05);
+ }
+ geometry.computeVertexNormals();
+
+ const ground=new THREE.Mesh(geometry,mat(cfg.ground));
+ ground.receiveShadow=true;
+ ground.userData.ground=true;
+ terrainGroup.add(ground);
+ addConformingGrid();
+
+ scene.background.set(isNight?0x101b32:cfg.background);
+ scene.fog.color.set(isNight?0x101b32:cfg.fog);
+
+ const treeCount=Math.min(cfg.trees,Math.floor(MAP_SIZE*.75));
+ for(let i=0;i<treeCount;i++){
+  const x=(Math.random()-.5)*MAP_SIZE*.94;
+  const z=(Math.random()-.5)*MAP_SIZE*.94;
+  if(Math.abs(x)<MAP_SIZE*.12&&Math.abs(z)<MAP_SIZE*.12&&Math.random()<.75)continue;
+  makeTree(terrainGroup,x,z,.55+Math.random()*.65);
+ }
+
+ for(let i=0;i<cfg.rocks;i++){
+  const x=(Math.random()-.5)*MAP_SIZE*.92;
+  const z=(Math.random()-.5)*MAP_SIZE*.92;
+  const h=getTerrainHeight(x,z);
+  const rock=new THREE.Mesh(
+   new THREE.DodecahedronGeometry(1+Math.random()*2.5,0),
+   mat(mapType==="volcanic"?0x292626:
+       mapType==="tundra"||mapType==="alpine"?0xb8c4c7:
+       mapType==="desert"?0xa58b55:0x777c70)
+  );
+  rock.position.set(x,h+.5,z);
+  rock.scale.set(1+Math.random(),.5+Math.random(),1+Math.random());
+  rock.rotation.y=Math.random()*Math.PI;
+  rock.castShadow=true;
+  terrainGroup.add(rock);
+ }
+
+ // Picos decorativos nos biomas de montanha.
+ if(mapType==="mountains"||mapType==="alpine"||mapType==="volcanic"){
+  const count=Math.min(55,Math.floor(MAP_SIZE/8));
+  for(let i=0;i<count;i++){
+   const x=(Math.random()-.5)*MAP_SIZE*.88;
+   const z=(Math.random()-.5)*MAP_SIZE*.88;
+   if(Math.abs(x)<MAP_SIZE*.1&&Math.abs(z)<MAP_SIZE*.1)continue;
+   const height=mapType==="alpine"?18+Math.random()*35:
+    mapType==="volcanic"?12+Math.random()*30:10+Math.random()*32;
+   const color=mapType==="volcanic"?(Math.random()>.5?0x443a38:0x66504a):
+    mapType==="alpine"?0xaebdc0:0x84917e;
+   const hill=new THREE.Mesh(new THREE.ConeGeometry(8+Math.random()*17,height,7),mat(color));
+   hill.position.set(x,getTerrainHeight(x,z)+height*.35,z);
+   hill.rotation.y=Math.random()*Math.PI;
+   hill.castShadow=true;
+   terrainGroup.add(hill);
+  }
+ }
+
+ if(mapType==="volcanic"){
+  for(let i=0;i<7;i++){
+   const x=(Math.random()-.5)*MAP_SIZE*.65,z=(Math.random()-.5)*MAP_SIZE*.65;
+   const lava=new THREE.Mesh(new THREE.CircleGeometry(2+Math.random()*4,18),new THREE.MeshBasicMaterial({color:0xff4a12,side:THREE.DoubleSide}));
+   lava.rotation.x=-Math.PI/2;
+   lava.position.set(x,getTerrainHeight(x,z)+.12,z);
+   terrainGroup.add(lava);
+  }
+ }
+
+ if(mapType==="swamp"){
+  for(let i=0;i<30;i++){
+   const x=(Math.random()-.5)*MAP_SIZE*.85,z=(Math.random()-.5)*MAP_SIZE*.85;
+   waterSurface(terrainGroup,4+Math.random()*8,3+Math.random()*6,0x365f51,getTerrainHeight(x,z)+.12).position.set(x,getTerrainHeight(x,z)+.12,z);
+  }
+ }
+
+ if(mapType==="tundra"||mapType==="alpine"){
+  for(let i=0;i<Math.min(35,Math.floor(MAP_SIZE/10));i++){
+   const x=(Math.random()-.5)*MAP_SIZE*.9,z=(Math.random()-.5)*MAP_SIZE*.9;
+   const snow=new THREE.Mesh(new THREE.SphereGeometry(2+Math.random()*5,8,6),mat(0xe8f1f4));
+   snow.scale.y=.4;
+   snow.position.set(x,getTerrainHeight(x,z)+.5,z);
+   terrainGroup.add(snow);
+  }
+ }
+
+ if(mapType==="savanna"){
+  for(let i=0;i<Math.min(180,MAP_SIZE/2);i++){
+   const x=(Math.random()-.5)*MAP_SIZE*.9,z=(Math.random()-.5)*MAP_SIZE*.9;
+   const grass=new THREE.Mesh(new THREE.ConeGeometry(.25,.9,4),mat(0x9e963e));
+   grass.position.set(x,getTerrainHeight(x,z)+.4,z);
+   grass.rotation.z=(Math.random()-.5)*.4;
+   terrainGroup.add(grass);
+  }
+ }
+}
+
+function createModel(type){
+ const g=new THREE.Group();
+ const wall=[0xe5d5b8,0xd6dfdf,0xd6bca0,0xc9d8e7][Math.floor(Math.random()*4)];
+
+ if(type==="road"){
+  box(g,8,.12,8,0x343b43,0,0,0);
+  box(g,.16,.03,7.5,0xf3d65c,0,.12,0);
+  for(let z=-3;z<=3;z+=3)box(g,.7,.03,.25,0xffffff,0,.14,z);
+ }else if(type==="tree"){
+  makeTree(g,0,0,1.1);
+ }else if(type==="park"){
+  box(g,10,.2,10,0x57945b,0,0,0);
+  makeTree(g,-3,-2,.8);makeTree(g,3,2,.8);makeTree(g,2,-3,.65);
+  box(g,3,.18,.7,0xc7b48b,0,.2,0);
+ }else if(type==="house"||type==="suburb"){
+  const s=type==="suburb"?6:5;
+  box(g,s,3.5,s,wall,0,0,0);
+  const roof=new THREE.Mesh(new THREE.ConeGeometry(s*.78,2.2,4),mat(0x9c493c));
+  roof.position.y=4.6;roof.rotation.y=Math.PI/4;roof.castShadow=true;g.add(roof);
+  box(g,1,1.8,.12,0x624b37,0,.05,s/2+.07);
+  box(g,.9,.9,.12,0x8fd5ec,-1.3,1.5,s/2+.08);
+  box(g,.9,.9,.12,0x8fd5ec,1.3,1.5,s/2+.08);
+ }else if(type==="apartment"){
+  box(g,7,17,7,0xd1d8dd,0,0,0);
+  for(let y=2;y<16;y+=3)for(let x=-2;x<=2;x+=2)box(g,.8,1.2,.08,0x78c9e8,x,y,3.56);
+  box(g,7.4,.6,7.4,0x596773,0,17,0);
+ }else if(["shop","market","mall"].includes(type)){
+  const s=type==="mall"?14:type==="market"?9:7;
+  const h=type==="mall"?7:5;
+  box(g,s,h,s,type==="mall"?0xd6d5d0:0xe1d4bd,0,0,0);
+  box(g,s+.3,.6,s+.3,0x405466,0,h,0);
+  box(g,s*.45,2,.12,0x70cde8,0,.5,s/2+.08);
+ }else if(type==="farm"||type==="field"){
+  box(g,10,.12,10,0x8c9e51,0,0,0);
+  for(let z=-4;z<=4;z+=1.5){
+   box(g,8.5,.15,.3,0x3c6c35,0,.12,z);
+   for(let x=-3;x<=3;x+=1.5){
+    const crop=new THREE.Mesh(new THREE.ConeGeometry(.22,.75,5),mat(0x85a944));
+    crop.position.set(x,.55,z);g.add(crop);
+   }
+  }
+ }else if(type==="stream"||type==="river"){
+  const w=type==="river"?12:5.5;
+  box(g,w+1.5,.18,9,0x9b8a62,0,0,0);
+  waterSurface(g,w,8,type==="river"?0x168bd0:0x28b9d5);
+  for(const side of [-1,1])for(const z of [-3,0,3]){
+   const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.42,0),mat(0x8c958d));
+   rock.position.set(side*(w/2+.25),.25,z);
+   rock.scale.set(1.25,.6,.8);g.add(rock);
+  }
+ }else if(type==="lake"){
+  const shore=new THREE.Mesh(new THREE.CylinderGeometry(9,9,.25,32),mat(0x9b8a62));
+  shore.position.y=.05;shore.scale.set(1,1,.8);g.add(shore);
+  const lake=new THREE.Mesh(new THREE.CircleGeometry(7.8,48),mat(0x168bd0));
+  lake.material.side=THREE.DoubleSide;lake.rotation.x=-Math.PI/2;
+  lake.position.y=.2;lake.scale.set(1,.8,1);
+  lake.userData.waterSurface=true;lake.userData.baseY=.2;g.add(lake);
+  for(let i=0;i<14;i++){
+   const a=i/14*Math.PI*2;
+   const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.55,0),mat(0x8b958f));
+   rock.position.set(Math.cos(a)*8.2,.25,Math.sin(a)*6.2);
+   rock.scale.set(1.2,.55,.8);g.add(rock);
+  }
+  makeTree(g,-6.5,-5.2,.7);makeTree(g,6.4,4.7,.65);
+ }else if(type==="dam"){
+  box(g,18,.25,18,0x8c9b75,0,0,0);
+  waterSurface(g,15.5,7.2,0x147fc2,.24).position.z=-4.3;
+  box(g,16,4.2,1.4,0xb8c0c5,0,0,1.2);
+  box(g,16.4,.35,1.8,0x737f88,0,4.2,1.2);
+  for(let x=-6;x<=6;x+=4){
+   box(g,1.5,2.1,.18,0x344d5b,x,.25,1.96);
+   box(g,.35,1.6,.22,0xe7d16b,x,.5,2.08);
+  }
+  box(g,7,.14,5.2,0x188ecb,0,.12,5.2);
+ }else if(type==="bridge"){
+  box(g,8.5,.28,13,0x626d75,0,2.2,0);
+  box(g,8.8,.18,13.3,0x343d45,0,2.4,0);
+  for(let z=-5;z<=5;z+=2)box(g,.12,.035,.7,0xf5dc75,0,2.51,z);
+  for(const x of [-4.05,4.05]){
+   box(g,.18,.9,13,0xd7dce0,x,2.5,0);
+   for(let z=-5;z<=5;z+=2.5)box(g,.18,.8,.18,0xe1e5e8,x,2.8,z);
+  }
+  for(const x of [-3,3])for(const z of [-4,4])box(g,.7,2.2,.7,0x737d84,x,0,z);
+ }else{
+  const colors={hospital:0xf0eee7,school:0xd9bd70,fire:0xb7473e,power:0x777e88,water:0x4b9db9};
+  const s=type==="hospital"?10:8;
+  box(g,s,6,s,colors[type]||wall,0,0,0);
+  box(g,s+.4,.5,s+.4,0x536473,0,6,0);
+  if(type==="hospital"){
+   box(g,.8,3,.15,0xd73d3d,0,2,s/2+.1);
+   box(g,2.5,.8,.15,0xd73d3d,0,2.7,s/2+.1);
+  }
+  if(type==="fire"){
+   box(g,2.2,1.6,.15,0xf3d6b0,0,.8,s/2+.1);
+   box(g,.5,2.8,.18,0x343b43,-2,.3,s/2+.12);
+  }
+  if(type==="power")for(const x of [-2,2])box(g,.2,4,.2,0x424a50,x,6,0);
+ }
+
+ g.userData={
+  type,cost:prices[type],population:residents[type]||0,
+  radius:radii[type]||4,placed:false
+ };
+ return g;
+}
+
+function snap(n){return Math.round(n/GRID)*GRID}
+
+function selectType(type){
+ if(!Object.hasOwn(prices,type))return;
+ selectedType=type;deleteMode=false;
+ document.querySelectorAll(".build").forEach(b=>b.classList.toggle("active",b.dataset.type===type));
+ $("info").textContent=names[type]+" — custo: "+fmt(actualPrice(type))+". Clique no terreno.";
+}
+
+document.querySelectorAll(".build").forEach(b=>b.addEventListener("click",()=>selectType(b.dataset.type)));
+
+function validIslandPosition(x,z){
+ const nx=x/(MAP_SIZE*.355),nz=z/(MAP_SIZE*.355*.82);
+ const angle=Math.atan2(nz,nx);
+ const irregular=1+.055*Math.sin(angle*3)+.035*Math.sin(angle*5)+.018*Math.cos(angle*9);
+ return Math.hypot(nx,nz)<irregular*.94;
+}
+
+function placeBuilding(point){
+ if(!selectedType)return;
+ const type=selectedType,x=snap(point.x),z=snap(point.z);
+
+ if(mapType==="island"){
+  if(!validIslandPosition(x,z)){notify("Construa na parte verde da ilha, longe da praia.");return}
+ }else if(Math.abs(x)>LIMIT||Math.abs(z)>LIMIT){
+  notify("Limite do mapa atingido!");return;
+ }
+
+ const cost=actualPrice(type);
+ if(money<cost){notify("Dinheiro insuficiente!");return}
+
+ for(const other of buildings){
+  const dist=Math.hypot(x-other.position.x,z-other.position.z);
+  const waters=["stream","river","lake"];
+  if(waters.includes(type)&&waters.includes(other.userData.type))continue;
+  if(type==="bridge"&&waters.includes(other.userData.type))continue;
+  if(other.userData.type==="bridge"&&waters.includes(type))continue;
+  const a=radii[type]||3,b=other.userData.radius||3;
+  const threshold=(type==="road"||other.userData.type==="road")?(a+b)*.35:(a+b)*.7;
+  if(dist<threshold){notify("Espaço ocupado. Tente outro local.");return}
+ }
+
+ const model=createModel(type);
+ model.position.set(x,mapType==="island"?0:getTerrainHeight(x,z),z);
+ model.rotation.y=rotation;
+ model.userData.placed=true;
+ city.add(model);buildings.push(model);
+ money-=cost;
+ population+=residents[type]||0;
+ updateStats();
+ notify(names[type]+" construída!");
+}
+
+function removeBuilding(model,refund=true){
+ if(!model||!model.userData.placed||!buildings.includes(model))return;
+ city.remove(model);
+ buildings.splice(buildings.indexOf(model),1);
+ if(refund&&difficulty!=="sandbox")money+=Math.floor(actualPrice(model.userData.type)*.5);
+ population=Math.max(0,population-(model.userData.population||0));
+ disposeObject(model);
+ updateStats();
+}
+
+function cancelSelection(){
+ selectedType=null;deleteMode=false;
+ document.querySelectorAll(".build").forEach(b=>b.classList.remove("active"));
+ $("info").textContent="Escolha uma construção e clique no terreno.";
+}
+
+$("rotate").onclick=()=>{
+ rotation=(rotation+Math.PI/2)%(Math.PI*2);
+ notify("Próxima construção girada em 90°");
+};
+$("cancel").onclick=cancelSelection;
+$("remove").onclick=()=>{
+ selectedType=null;deleteMode=!deleteMode;
+ document.querySelectorAll(".build").forEach(b=>b.classList.remove("active"));
+ $("info").textContent=deleteMode?"Clique em uma construção para removê-la.":"Modo de remoção desativado.";
+};
+
+$("sell").onclick=()=>{
+ updateStats();
+ if(foodProduction<=0){notify("Construa fazendas ou plantações primeiro.");return}
+ if(difficulty==="sandbox"){notify("Na Caixa de Areia você não precisa vender produção.");return}
+ const earnings=Math.floor(foodProduction*15*rules[difficulty].income);
+ money+=earnings;updateUI();
+ notify("Produção vendida: +"+fmt(earnings));
+};
+
+function applyLighting(){
+ sun.intensity=isNight?.35:3;
+ scene.children.find(o=>o.isHemisphereLight).intensity=isNight?.55:2;
+ renderer.toneMappingExposure=isNight?.8:1.1;
+}
+
+$("daynight").onclick=()=>{
+ isNight=!isNight;
+ const cfg=biomeSettings[mapType]||biomeSettings.plains;
+ scene.background.set(isNight?0x101b32:cfg.background);
+ scene.fog.color.set(isNight?0x101b32:cfg.fog);
+ applyLighting();
+ notify(isNight?"Modo noturno ativado.":"Modo diurno ativado.");
+};
+
+function clearDisaster(){
+ for(const obj of disasterObjects){scene.remove(obj);disposeObject(obj)}
+ disasterObjects=[];
+ disasterActive=false;activeDisasterType="";
+ disasterTimer=0;disasterElapsed=0;
+ disasterTarget=null;damageApplied=false;
+ const cfg=biomeSettings[mapType]||biomeSettings.plains;
+ scene.background.set(isNight?0x101b32:cfg.background);
+ scene.fog.color.set(isNight?0x101b32:cfg.fog);
+ applyLighting();
+}
+
+function disasterVictim(b){
+ if(buildings.includes(b))removeBuilding(b,false);
+}
+
+function naturalDisaster(){
+ if(difficulty==="sandbox"){notify("Na Caixa de Areia, os desastres não causam prejuízos.");return}
+ if(disasterActive){notify("Já existe um desastre em andamento!");return}
+ if(Math.random()>Math.min(1,.7*rules[difficulty].disaster)){
+  notify("☀️ A cidade passou por um dia tranquilo.");return;
+ }
+
+ const types=["Tornado","Terremoto","Tempestade","Incêndio","Inundação"];
+ activeDisasterType=types[Math.floor(Math.random()*types.length)];
+ disasterActive=true;disasterElapsed=0;disasterTimer=12;damageApplied=false;
+ disasterCenter.set((Math.random()-.5)*MAP_SIZE*.5,0,(Math.random()-.5)*MAP_SIZE*.5);
+ happiness=Math.max(0,happiness-3);
+
+ if(activeDisasterType==="Tornado"){
+  const tornado=new THREE.Group();
+  for(let i=0;i<12;i++){
+   const ring=new THREE.Mesh(new THREE.TorusGeometry(.8+i*.38,.32,8,24),new THREE.MeshStandardMaterial({color:i%2?0x777d85:0x454b55,transparent:true,opacity:.78}));
+   ring.rotation.x=Math.PI/2;ring.position.y=i*1.15;tornado.add(ring);
+  }
+  const cloud=new THREE.Mesh(new THREE.SphereGeometry(3.5,12,8),mat(0x525761));
+  cloud.position.y=14;cloud.scale.set(1.7,.65,1.4);tornado.add(cloud);
+  tornado.position.copy(disasterCenter);
+  tornado.userData.direction=Math.random()*Math.PI*2;
+  tornado.userData.disaster="tornado";
+  scene.add(tornado);disasterObjects.push(tornado);
+  notify("🌪️ Tornado! O funil está atravessando a cidade!");
+ }else if(activeDisasterType==="Terremoto"){
+  const ring=new THREE.Mesh(new THREE.RingGeometry(2,4,48),new THREE.MeshBasicMaterial({color:0xffb52e,side:THREE.DoubleSide}));
+  ring.rotation.x=-Math.PI/2;ring.position.copy(disasterCenter);ring.position.y=.25;
+  ring.userData.disaster="earthquake";
+  scene.add(ring);disasterObjects.push(ring);
+  notify("🌎 Terremoto! Proteja os edifícios da região!");
+ }else if(activeDisasterType==="Tempestade"){
+  const count=900,positions=new Float32Array(count*3);
+  for(let i=0;i<count;i++){
+   positions[i*3]=(Math.random()-.5)*MAP_SIZE*.7;
+   positions[i*3+1]=Math.random()*80;
+   positions[i*3+2]=(Math.random()-.5)*MAP_SIZE*.7;
+  }
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute("position",new THREE.BufferAttribute(positions,3));
+  const rain=new THREE.Points(geo,new THREE.PointsMaterial({color:0xd9edff,size:.55,transparent:true,opacity:.85}));
+  rain.userData.disaster="rain";
+  scene.add(rain);disasterObjects.push(rain);
+  scene.background.set(0x53677a);scene.fog.color.set(0x53677a);
+  notify("⛈️ Tempestade! Chuva forte sobre a cidade!");
+ }else if(activeDisasterType==="Incêndio"){
+  const candidates=buildings.filter(b=>!["road","park","tree","stream","river","lake","dam","bridge"].includes(b.userData.type));
+  if(!candidates.length){clearDisaster();notify("Não há edifícios que possam pegar fogo.");return}
+  disasterTarget=candidates[Math.floor(Math.random()*candidates.length)];
+  const fire=new THREE.Group();
+  for(let i=0;i<12;i++){
+   const flame=new THREE.Mesh(new THREE.ConeGeometry(.45+Math.random()*.65,1.8+Math.random()*2.2,7),new THREE.MeshBasicMaterial({color:i%2?0xff9d00:0xff3c08,transparent:true,opacity:.9}));
+   flame.position.set((Math.random()-.5)*4,1+Math.random()*2.5,(Math.random()-.5)*4);
+   fire.add(flame);
+  }
+  fire.position.copy(disasterTarget.position);
+  fire.userData.disaster="fire";
+  scene.add(fire);disasterObjects.push(fire);
+  notify("🔥 Incêndio! Um edifício está em perigo!");
+ }else{
+  const flood=new THREE.Mesh(new THREE.CircleGeometry(18,40),new THREE.MeshBasicMaterial({color:0x168bd0,transparent:true,opacity:.55,side:THREE.DoubleSide,depthWrite:false}));
+  flood.rotation.x=-Math.PI/2;flood.position.copy(disasterCenter);flood.position.y=.18;
+  flood.userData.disaster="flood";
+  scene.add(flood);disasterObjects.push(flood);
+  notify("🌊 Inundação! A água está se espalhando!");
+ }
+ updateStats();
+}
+$("disaster").onclick=naturalDisaster;
+
+function tickDisaster(delta,time){
+ if(!disasterActive)return;
+ disasterElapsed+=delta;disasterTimer-=delta;
+
+ for(const obj of disasterObjects){
+  if(obj.userData.disaster==="tornado"){
+   obj.rotation.y+=delta*4;
+   const dir=obj.userData.direction||0;
+   obj.position.x+=Math.cos(dir)*delta*12;
+   obj.position.z+=Math.sin(dir)*delta*12;
+   if(Math.abs(obj.position.x)>LIMIT||Math.abs(obj.position.z)>LIMIT)obj.userData.direction+=Math.PI;
+   for(const b of [...buildings]){
+    if(Math.hypot(b.position.x-obj.position.x,b.position.z-obj.position.z)<8&&Math.random()<delta*.8){
+     disasterVictim(b);notify("🌪️ O tornado destruiu uma construção!");
+    }
+   }
+  }
+  if(obj.userData.disaster==="earthquake"){
+   const scale=1+Math.sin(time*7)*.2;
+   obj.scale.set(scale,scale,scale);
+  }
+  if(obj.userData.disaster==="rain"){
+   const p=obj.geometry.attributes.position;
+   for(let i=0;i<p.count;i++){
+    p.setY(i,p.getY(i)-delta*65);
+    if(p.getY(i)<0)p.setY(i,80+Math.random()*30);
+   }
+   p.needsUpdate=true;
+  }
+  if(obj.userData.disaster==="fire"){
+   obj.children.forEach((flame,i)=>{
+    flame.scale.y=.65+Math.abs(Math.sin(time*7+i))*1.2;
+    flame.rotation.y+=delta*(1+i*.05);
+   });
+  }
+  if(obj.userData.disaster==="flood"){
+   const scale=1+Math.min(disasterElapsed*.08,1.3);
+   obj.scale.set(scale,scale,scale);
+  }
+ }
+
+ if(disasterElapsed>4&&!damageApplied){
+  damageApplied=true;
+  if(activeDisasterType==="Terremoto"){
+   for(const b of [...buildings]){
+    if(Math.hypot(b.position.x-disasterCenter.x,b.position.z-disasterCenter.z)<22&&
+       !["road","tree","stream","river","lake","bridge"].includes(b.userData.type)&&Math.random()<.35)disasterVictim(b);
+   }
+   happiness=Math.max(0,happiness-5);
+   notify("🌎 O terremoto danificou a região!");
+  }
+  if(activeDisasterType==="Incêndio"&&disasterTarget&&buildings.includes(disasterTarget)){
+   if(!buildings.some(b=>b.userData.type==="fire")){
+    disasterVictim(disasterTarget);happiness=Math.max(0,happiness-4);
+    notify("🔥 O incêndio destruiu uma construção!");
+   }else notify("🚒 Os bombeiros controlaram o incêndio!");
+  }
+  if(activeDisasterType==="Inundação"){
+   for(const b of [...buildings]){
+    if(Math.hypot(b.position.x-disasterCenter.x,b.position.z-disasterCenter.z)<18&&
+       !["stream","river","lake","dam","bridge","road"].includes(b.userData.type))disasterVictim(b);
+   }
+   happiness=Math.max(0,happiness-5);
+   notify("🌊 A inundação atingiu a cidade!");
+  }
+  updateStats();
+ }
+ if(disasterTimer<=0){clearDisaster();notify("✅ O desastre terminou.")}
+}
+
+function saveCity(){
+ const data={
+  version:5,mapType,mapSize:MAP_SIZE,difficulty,money,population,happiness,
+  rotation,isNight,day,
+  buildings:buildings.map(b=>({type:b.userData.type,x:b.position.x,z:b.position.z,rotation:b.rotation.y}))
+ };
+ try{
+  localStorage.setItem("metroCity3D",JSON.stringify(data));
+  notify("Cidade salva neste navegador!");
+ }catch(e){notify("Não foi possível salvar a cidade.")}
+}
+$("save").onclick=saveCity;
+$("savePause").onclick=saveCity;
+
+function loadCity(){
+ const saved=localStorage.getItem("metroCity3D");
+ if(!saved){notify("Nenhuma cidade salva encontrada.");return}
+ try{
+  const d=JSON.parse(saved);
+  if(!Array.isArray(d.buildings))throw Error("Save inválido");
+  clearDisaster();
+  for(const b of buildings){city.remove(b);disposeObject(b)}
+  buildings=[];
+  population=0;
+  MAP_SIZE=Number(d.mapSize)||600;
+  mapType=biomeSettings[d.mapType]?d.mapType:"plains";
+  difficulty=rules[d.difficulty]?d.difficulty:"normal";
+  addTerrain();
+
+  for(const item of d.buildings){
+   if(!Object.hasOwn(prices,item.type)||!Number.isFinite(item.x)||!Number.isFinite(item.z))continue;
+   const b=createModel(item.type);
+   b.position.set(item.x,mapType==="island"?0:getTerrainHeight(item.x,item.z),item.z);
+   b.rotation.y=Number(item.rotation)||0;
+   b.userData.placed=true;
+   city.add(b);buildings.push(b);
+   population+=residents[item.type]||0;
+  }
+
+  money=Number.isFinite(d.money)?d.money:rules[difficulty].start;
+  happiness=Number.isFinite(d.happiness)?d.happiness:rules[difficulty].happy;
+  rotation=Number(d.rotation)||0;
+  isNight=Boolean(d.isNight);
+  day=Number(d.day)||1;
+
+  $("mapType").value=mapType;
+  $("mapSize").value=String(MAP_SIZE);
+  document.querySelectorAll(".diff").forEach(b=>b.classList.toggle("active",b.dataset.difficulty===difficulty));
+  $("difficultyDesc").textContent=difficultyInfo[difficulty];
+
+  camera.position.set(MAP_SIZE*.11,MAP_SIZE*.13,MAP_SIZE*.14);
+  controls.target.set(0,0,0);
+  controls.maxDistance=MAP_SIZE*.85;
+  scene.fog.far=MAP_SIZE*1.8;
+  scene.fog.near=MAP_SIZE*.6;
+  applyLighting();cancelSelection();updateStats();
+  gameStarted=true;paused=false;
+  $("intro").classList.add("hidden");
+  $("pausePanel").classList.remove("show");
+  notify("Cidade carregada!");
+ }catch(e){console.error(e);notify("Erro ao carregar a cidade.")}
+}
+$("load").onclick=loadCity;
+
+function startGame(){
+ mapType=$("mapType").value;
+ MAP_SIZE=Number($("mapSize").value);
+ difficulty=document.querySelector(".diff.active")?.dataset.difficulty||"normal";
+ LIMIT=MAP_SIZE/2-12;GRID=4;
+ money=rules[difficulty].start;
+ population=0;happiness=rules[difficulty].happy;
+ rotation=0;isNight=false;day=1;cycleClock=0;
+ selectedType=null;deleteMode=false;paused=false;
+ clearDisaster();
+ for(const b of buildings){city.remove(b);disposeObject(b)}
+ buildings=[];
+ addTerrain();
+ camera.position.set(MAP_SIZE*.11,MAP_SIZE*.13,MAP_SIZE*.14);
+ controls.target.set(0,0,0);
+ controls.maxDistance=MAP_SIZE*.85;
+ controls.minDistance=12;
+ scene.fog.near=MAP_SIZE*.58;
+ scene.fog.far=MAP_SIZE*1.8;
+ const cfg=biomeSettings[mapType];
+ scene.background.set(cfg.background);
+ scene.fog.color.set(cfg.fog);
+ applyLighting();
+ $("intro").classList.add("hidden");
+ $("pausePanel").classList.remove("show");
+ gameStarted=true;
+ updateStats();cancelSelection();
+ notify("Nova cidade criada! Bioma: "+$("mapType").selectedOptions[0].text+".");
+}
+$("start").onclick=startGame;
+
+const diffButtons=[...document.querySelectorAll(".diff")];
+diffButtons.forEach(btn=>btn.addEventListener("click",()=>{
+ diffButtons.forEach(b=>b.classList.toggle("active",b===btn));
+ difficulty=btn.dataset.difficulty;
+ $("difficultyDesc").textContent=difficultyInfo[difficulty];
+}));
+
+function drawPreview(){
+ const boxEl=$("mapPreview");
+ boxEl.querySelector("canvas")?.remove();
+ const c=document.createElement("canvas");
+ c.width=700;c.height=200;
+ c.style.width="100%";c.style.height="100%";
+ boxEl.prepend(c);
+ const ctx=c.getContext("2d");
+ const type=$("mapType").value;
+ const cfg=biomeSettings[type]||biomeSettings.plains;
+ ctx.fillStyle="#"+cfg.ground.toString(16).padStart(6,"0");
+ ctx.fillRect(0,0,c.width,c.height);
+
+ if(type==="island"){
+  ctx.fillStyle="#197fa8";ctx.fillRect(0,0,c.width,c.height);
+  function path(rx,ry,phase){
+   ctx.beginPath();
+   for(let i=0;i<=160;i++){
+    const a=i/160*Math.PI*2;
+    const ir=1+.055*Math.sin(a*3+phase)+.035*Math.sin(a*5+phase*1.7)+.018*Math.cos(a*9-phase);
+    const x=350+Math.cos(a)*rx*ir,y=100+Math.sin(a)*ry*ir;
+    if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+   }
+   ctx.closePath();
+  }
+  ctx.fillStyle="#e7ce91";path(285,93,.4);ctx.fill();
+  ctx.fillStyle="#679957";path(250,76,0);ctx.fill();
+ }
+ if(["forest","jungle","autumn","cherry","swamp"].includes(type)){
+  for(let i=0;i<180;i++){
+   const x=Math.random()*c.width,y=Math.random()*c.height;
+   ctx.fillStyle=type==="cherry"?"#eaa5c8":type==="autumn"?"#c45d26":type==="jungle"?"#14552c":"#285c39";
+   ctx.beginPath();ctx.arc(x,y,3+Math.random()*4,0,Math.PI*2);ctx.fill();
+  }
+ }
+ if(["mountains","alpine","volcanic","tundra"].includes(type)){
+  for(let i=0;i<48;i++){
+   const x=Math.random()*c.width,y=Math.random()*c.height;
+   ctx.fillStyle=type==="volcanic"?"#443a38":type==="tundra"?"#e8f1f4":"#899783";
+   ctx.beginPath();ctx.moveTo(x,y-20-Math.random()*35);ctx.lineTo(x-22,y+20);ctx.lineTo(x+22,y+20);ctx.closePath();ctx.fill();
+  }
+ }
+ if(type==="desert"||type==="savanna"){
+  for(let i=0;i<14;i++){
+   ctx.fillStyle=type==="desert"?"#ad955d":"#d0b96a";
+   ctx.beginPath();ctx.ellipse(Math.random()*700,Math.random()*200,30+Math.random()*70,8+Math.random()*20,0,0,Math.PI*2);ctx.fill();
+  }
+ }
+ if(type!=="island"){
+  ctx.strokeStyle="#d7dfb4";ctx.globalAlpha=.35;ctx.lineWidth=1;
+  for(let x=0;x<c.width;x+=35){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,c.height);ctx.stroke()}
+  for(let y=0;y<c.height;y+=35){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(c.width,y);ctx.stroke()}
+  ctx.globalAlpha=1;
+ }
+ $("mapLabel").textContent=$("mapType").selectedOptions[0].text+" • "+$("mapSize").value+" × "+$("mapSize").value;
+}
+$("mapType").addEventListener("change",drawPreview);
+$("mapSize").addEventListener("change",drawPreview);
+drawPreview();
+
+$("pauseBtn").onclick=()=>{
+ if(!gameStarted)return;
+ paused=true;
+ $("pauseDescription").textContent="Mapa: "+MAP_SIZE+" × "+MAP_SIZE+" • "+$("mapType").selectedOptions[0]?.text+" • Dificuldade: "+difficulty;
+ $("pausePanel").classList.add("show");
+};
+$("resume").onclick=()=>{$("pausePanel").classList.remove("show");paused=false};
+
+function configureMenu(){
+ $("mapType").value=mapType;
+ $("mapSize").value=String(MAP_SIZE);
+ diffButtons.forEach(b=>b.classList.toggle("active",b.dataset.difficulty===difficulty));
+ $("difficultyDesc").textContent=difficultyInfo[difficulty];
+ drawPreview();
+}
+
+$("changeMap").onclick=()=>{
+ $("pausePanel").classList.remove("show");
+ $("intro").classList.remove("hidden");
+ configureMenu();paused=true;
+};
+$("newGame").onclick=()=>{
+ $("intro").classList.remove("hidden");
+ configureMenu();paused=true;
+};
+
+window.addEventListener("keydown",e=>{
+ if(["INPUT","TEXTAREA","SELECT"].includes(e.target?.tagName))return;
+ const key=e.key.toLowerCase();
+ if(key==="r"&&!e.repeat)rotation=(rotation+Math.PI/2)%(Math.PI*2);
+ if(key==="x"){
+  selectedType=null;deleteMode=true;
+  document.querySelectorAll(".build").forEach(b=>b.classList.remove("active"));
+  notify("Modo de remoção ativado.");
+ }
+ if(e.key==="Escape")cancelSelection();
+});
+
+const movementKeys=new Set();
+window.addEventListener("keydown",e=>{
+ const key=e.key.toLowerCase();
+ if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright"].includes(key)){
+  movementKeys.add(key);e.preventDefault();
+ }
+});
+window.addEventListener("keyup",e=>movementKeys.delete(e.key.toLowerCase()));
+window.addEventListener("blur",()=>movementKeys.clear());
+
+function moveAroundMap(delta){
+ if(!gameStarted||paused)return;
+ const forward=new THREE.Vector3();
+ camera.getWorldDirection(forward);forward.y=0;
+ if(forward.lengthSq())forward.normalize();
+ const right=new THREE.Vector3().crossVectors(forward,camera.up).normalize();
+ const move=new THREE.Vector3();
+ if(movementKeys.has("w")||movementKeys.has("arrowup"))move.add(forward);
+ if(movementKeys.has("s")||movementKeys.has("arrowdown"))move.sub(forward);
+ if(movementKeys.has("d")||movementKeys.has("arrowright"))move.add(right);
+ if(movementKeys.has("a")||movementKeys.has("arrowleft"))move.sub(right);
+ if(!move.lengthSq())return;
+ move.normalize().multiplyScalar(Math.max(18,MAP_SIZE*.075)*delta);
+ camera.position.add(move);controls.target.add(move);
+ controls.target.x=THREE.MathUtils.clamp(controls.target.x,-LIMIT,LIMIT);
+ controls.target.z=THREE.MathUtils.clamp(controls.target.z,-LIMIT,LIMIT);
+}
+
+const raycaster=new THREE.Raycaster();
+const pointer=new THREE.Vector2();
+let down=null,moved=false;
+
+renderer.domElement.addEventListener("pointerdown",e=>{
+ if(e.button!==0)return;
+ down={x:e.clientX,y:e.clientY};moved=false;
+});
+renderer.domElement.addEventListener("pointermove",e=>{
+ if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)>5)moved=true;
+});
+renderer.domElement.addEventListener("pointerup",e=>{
+ if(!down)return;
+ const click=!moved;down=null;
+ if(!click||!gameStarted||paused)return;
+ const rect=renderer.domElement.getBoundingClientRect();
+ pointer.x=((e.clientX-rect.left)/rect.width)*2-1;
+ pointer.y=-((e.clientY-rect.top)/rect.height)*2+1;
+ raycaster.setFromCamera(pointer,camera);
+
+ const hits=raycaster.intersectObjects(city.children,true);
+ let selected=null;
+ if(hits.length){
+  let obj=hits[0].object;
+  while(obj.parent&&obj.parent!==city)obj=obj.parent;
+  if(obj.parent===city)selected=obj;
+ }
+ if(deleteMode){
+  if(selected)removeBuilding(selected,true);
+  else notify("Clique diretamente em uma construção.");
+  return;
+ }
+ if(selectedType){
+  const ground=terrainGroup.children.find(o=>o.userData.ground);
+  if(ground){
+   const groundHits=raycaster.intersectObject(ground);
+   if(groundHits.length)placeBuilding(groundHits[0].point);
+  }
+  return;
+ }
+ if(selected&&selected.userData.placed){
+  const t=selected.userData.type;
+  $("info").textContent=names[t]+" • Custo base: "+fmt(prices[t])+" • Selecione uma ferramenta para continuar.";
+ }
+});
+renderer.domElement.addEventListener("pointercancel",()=>down=null);
+
+window.addEventListener("resize",()=>{
+ camera.aspect=innerWidth/innerHeight;
+ camera.updateProjectionMatrix();
+ renderer.setSize(innerWidth,innerHeight);
+});
+
+const clock=new THREE.Clock();
+
+function animate(){
+ requestAnimationFrame(animate);
+ const delta=Math.min(clock.getDelta(),.05);
+ const time=clock.elapsedTime;
+
+ camera.position.sub(lastShake);
+ lastShake.set(0,0,0);
+
+ if(gameStarted&&!paused){
+  moveAroundMap(delta);
+  controls.update();
+
+  for(const b of buildings)b.traverse(o=>{
+   if(o.userData.waterSurface){
+    o.position.y=o.userData.baseY+Math.sin(time*1.6+b.position.x*.08)*.025;
+   }
+  });
+
+  if(disasterActive)tickDisaster(delta,time);
+
+  if(disasterActive&&activeDisasterType==="Terremoto"){
+   const intensity=.35*Math.max(0,1-disasterElapsed/10);
+   lastShake.set((Math.random()-.5)*intensity,(Math.random()-.5)*intensity,(Math.random()-.5)*intensity);
+   camera.position.add(lastShake);
+  }
+
+  cycleClock+=delta;
+  if(cycleClock>=15){
+   cycleClock=0;day++;
+   updateStats();
+   if(difficulty!=="sandbox")money+=totalIncome;
+   if(population>0){
+    const hasHospital=buildings.some(b=>b.userData.type==="hospital");
+    happiness=THREE.MathUtils.clamp(happiness+(hasHospital?1:0)-(money<0?4:0),0,100);
+   }
+   updateUI();
+  }
+ }else controls.update();
+
+ renderer.render(scene,camera);
+}
+
+addTerrain();
+updateStats();
+animate();
+</script>
+</body>
+</html>
